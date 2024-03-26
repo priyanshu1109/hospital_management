@@ -2,7 +2,7 @@
 
 # Setting up project
 ```
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 # Setting up database
