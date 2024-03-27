@@ -15,5 +15,3 @@ def create_app():
     api.add_namespace(ndoc)
 
     return app
-
-#db.create_all()

@@ -77,6 +77,7 @@ appointment_serializer = api.model("Appointment",{
 })
 
 patient_appointment_serializer = api.model("Appointment",{
+    "appointment_id":fields.Integer,
     "name":fields.String,
     "doctor_name":fields.String,
     "appointment_time":fields.String
