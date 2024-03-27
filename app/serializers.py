@@ -62,11 +62,11 @@ department_input_serializer = api.model("DepartmentInput",{
     "services":fields.String
 })
 
-assign_doctor_serializer = api.model("Department",{
+assign_doctor_serializer = api.model("DepartmentAssign",{
     "doctor_id":fields.Integer
 })
 
-book_doctor_serializer = api.model("Department",{
+book_doctor_serializer = api.model("BookDoctor",{
     "doctor_id":fields.Integer
 })
 
@@ -76,7 +76,7 @@ appointment_serializer = api.model("Appointment",{
     "appointment_time":fields.String
 })
 
-patient_appointment_serializer = api.model("Appointment",{
+patient_appointment_serializer = api.model("PatientAppointment",{
     "appointment_id":fields.Integer,
     "name":fields.String,
     "doctor_name":fields.String,

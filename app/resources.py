@@ -86,20 +86,25 @@ class MedicalHistoryAPI(Resource):
     def post(self,patient_id):
 
         '''Add medical history for specific patient'''
-        history = MedicalHistory(diagnosis=ns.payload['diagnosis'],allergies=ns.payload['allergies'],medication=ns.payload['medication'])
-        db.session.add(history)
-        patient = Patient.query.get(patient_id)
-        print(patient)
-        patient.medical.append(history)
-        db.session.commit()
-        return history,201
+        try:
+            history = MedicalHistory(diagnosis=ns.payload['diagnosis'],allergies=ns.payload['allergies'],medication=ns.payload['medication'])
+            db.session.add(history)
+            patient = Patient.query.get(patient_id)
+            patient.medical.append(history)
+            db.session.commit()
+            return history,201
+        except:
+            return {'message':'No patient with this ID'},404
     
     @ns.marshal_with(medicalhistory_serializer)
     def get(self,patient_id):
 
         '''Get specific patient medical history'''
-        patient = Patient.query.get(patient_id)
-        return patient.medical
+        try:
+            patient = Patient.query.get(patient_id)
+            return patient.medical
+        except:
+            return {'message':'No patient with this ID'},404
 
 @ns.route('/patients/<int:patient_id>/appointments')
 class PatientAppointmentAPI(Resource):
@@ -108,15 +113,17 @@ class PatientAppointmentAPI(Resource):
     def get(self,patient_id):
 
         '''Get appointment information for specific patient'''
-        patient = Patient.query.get(patient_id)
-        appointments = Appointment.query.filter(Appointment.patient_id==patient_id).all()
-        patients = []
-        for appointment in appointments:
-            d = Doctor.query.get(appointment.doctor_id)
-            res = {'appointment_id':appointment.id,'name':patient.name,'doctor_name':d.name,'appointment_time':appointment.appointment_time}
-            patients.append(res)
-        return patients
-
+        try:
+            patient = Patient.query.get(patient_id)
+            appointments = Appointment.query.filter(Appointment.patient_id==patient_id).all()
+            patients = []
+            for appointment in appointments:
+                d = Doctor.query.get(appointment.doctor_id)
+                res = {'appointment_id':appointment.id,'name':patient.name,'doctor_name':d.name,'appointment_time':appointment.appointment_time}
+                patients.append(res)
+            return patients
+        except:
+            return {'message':'No patient with this ID'},404
     
     
 
@@ -127,11 +134,14 @@ class AssignDoctorAPI(Resource):
     def put(self,department_id):
 
         '''Assign doctor to the department'''
-        department = Department.query.get(department_id)
-        doctor = Doctor.query.get(nd.payload['doctor_id'])
-        department.doctors.append(doctor)
-        db.session.commit()
-        return {'message':'Assigned'},201
+        try:
+            department = Department.query.get(department_id)
+            doctor = Doctor.query.get(nd.payload['doctor_id'])
+            department.doctors.append(doctor)
+            db.session.commit()
+            return {'message':'Assigned'},201
+        except:
+            return {'message':'No department or doctor with this ID'},404
 
 @nd.route('/department/<int:department_id>/doctors')
 class DepartmentDoctorAPI(Resource):
@@ -140,8 +150,11 @@ class DepartmentDoctorAPI(Resource):
     def get(self,department_id):
 
         '''Get list of doctors in specific department'''
-        department = Department.query.get(department_id)
-        return department.doctors
+        try:
+            department = Department.query.get(department_id)
+            return department.doctors
+        except:
+            return {'message':'No department with this ID'},404
 
 @ns.route('/patients/search')
 class PatientSearchAPI(Resource):
@@ -185,7 +198,7 @@ class DoctorFilterAPI(Resource):
     @ndoc.expect(api.parser().add_argument('specialization', type=str, help='Specialization', required=True))
     def get(self):
 
-        '''filter doctors by specialization'''
+        '''Filter doctors by specialization'''
         specialization = request.args.get('specialization')
         doctors = Doctor.query.filter(Doctor.specialization.like(f'%{specialization}%')).all()
         return doctors
@@ -196,8 +209,11 @@ class DoctorAvailabilityAPI(Resource):
     def get(self,doctor_id):
 
         '''Get availability schedule for doctor'''
-        doctors = Doctor.query.get(doctor_id)
-        return doctors.schedule
+        try:
+            doctors = Doctor.query.get(doctor_id)
+            return doctors.schedule
+        except:
+            return {'message':'No doctor with this ID'},404
 
 @ns.route('/patient/<int:patient_id>/book/<string:time>')
 class BookAppointmentAPI(Resource):
@@ -207,16 +223,22 @@ class BookAppointmentAPI(Resource):
     def put(self,patient_id,time):
 
         '''Book appointment'''
-        appointment = Appointment(doctor_id=ns.payload['doctor_id'],patient_id=patient_id,appointment_time=time)
-        db.session.add(appointment)
-        doctor = Doctor.query.get(ns.payload['doctor_id'])
-        for slots in doctor.schedule:
-            if slots.time==time:
-                if slots.available=='No':
-                    return {"message":"Slot is already booked"}
-                slots.available = 'No'
-        db.session.commit()
-        return appointment
+        try:
+            patient = Patient.query.get(patient_id)
+            if patient==None:
+                return {'message':'No patient with this ID'},404
+            appointment = Appointment(doctor_id=ns.payload['doctor_id'],patient_id=patient_id,appointment_time=time)
+            db.session.add(appointment)
+            doctor = Doctor.query.get(ns.payload['doctor_id'])
+            for slots in doctor.schedule:
+                if slots.time==time:
+                    if slots.available=='No':
+                        return {"message":"Slot is already booked"}
+                    slots.available = 'No'
+            db.session.commit()
+            return appointment
+        except:
+            return {'message':'No doctor or patient with this ID'},404
 
 @ndoc.route('/doctors/<int:doctor_id>/patients')
 class DoctorPatientAPI(Resource):
@@ -224,13 +246,18 @@ class DoctorPatientAPI(Resource):
     def get(self,doctor_id):
 
         '''Get list of patients assigned to doctor'''
-        doctors = Doctor.query.get(doctor_id)
-        appointments = Appointment.query.filter(Appointment.doctor_id==doctor_id)
-        patients = []
-        for patient in appointments:
-            p = Patient.query.get(patient.patient_id)
-            patients.append(p)
-        return patients
+        try:
+            doctors = Doctor.query.get(doctor_id)
+            if doctors==None:
+                return {'message':'No doctor with this ID'},404
+            appointments = Appointment.query.filter(Appointment.doctor_id==doctor_id)
+            patients = []
+            for patient in appointments:
+                p = Patient.query.get(patient.patient_id)
+                patients.append(p)
+            return patients
+        except:
+            return {'message':'No doctor or patient with given IDs'},404
 
 @ns.route('/patient/<int:appointment_id>/cancel')
 class CancelAppointmentAPI(Resource):
@@ -239,11 +266,14 @@ class CancelAppointmentAPI(Resource):
     def delete(self,appointment_id):
 
         '''Cancel appointment'''
-        appointment = Appointment.query.get(appointment_id)
-        db.session.delete(appointment)
-        doctor = Doctor.query.get(appointment.doctor_id)
-        for slots in doctor.schedule:
-            if slots.time==appointment.appointment_time:
-                slots.available = 'Yes'
-        db.session.commit()
-        return appointment
+        try:
+            appointment = Appointment.query.get(appointment_id)
+            db.session.delete(appointment)
+            doctor = Doctor.query.get(appointment.doctor_id)
+            for slots in doctor.schedule:
+                if slots.time==appointment.appointment_time:
+                    slots.available = 'Yes'
+            db.session.commit()
+            return appointment
+        except:
+            return {'message':'No appointment with this ID'},404

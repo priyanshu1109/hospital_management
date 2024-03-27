@@ -5,12 +5,8 @@
 pip install -r requirements.txt
 ```
 
-# Setting up database
-
+# Running project
 ```
-flask shell
-
-from app.models import *
-db.create_all()
-exit()
+flask run
 ```
+
